@@ -8,11 +8,13 @@ import javax.persistence.*;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @ToString(of = {"id", "username", "age"})
+@Builder
 public class Member {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "member_id")
     private Long id;
     private String username;
@@ -38,6 +40,15 @@ public class Member {
         if(team != null){
             changeTeam(team);
         }
+
+    }
+
+    public static Member createMember(){
+        return Member.builder()
+                .id(1L)
+                .age(100)
+                .username("chris")
+                .build();
 
     }
 
