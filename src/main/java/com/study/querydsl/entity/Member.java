@@ -46,7 +46,7 @@ public class Member {
     public static Member createMember(){
         return Member.builder()
                 .id(1L)
-                .age(100)
+                .age(0)
                 .username("chris")
                 .build();
 
