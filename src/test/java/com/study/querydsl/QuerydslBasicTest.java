@@ -3,10 +3,14 @@ package com.study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.study.querydsl.dto.MemberDto;
+import com.study.querydsl.dto.UserDto;
 import com.study.querydsl.entity.Member;
 import com.study.querydsl.entity.QMember;
 import com.study.querydsl.entity.Team;
@@ -461,7 +465,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void cocnat(){
+    public void concat(){
 
         List<String> result = queryFactory
                 .select(member.username.concat("_").concat(member.age.stringValue())) //stringValue : ENUM 처리시
@@ -472,5 +476,123 @@ public class QuerydslBasicTest {
         for (String s : result){
             System.out.println("s = " + s);
         }
+    }
+
+    @Test
+    public void simpleProjection(){
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+                .fetch();
+
+        for (String s : result){
+            System.out.println("s = " + s);
+        }
+
+    }
+    @Test
+    public void tupleProjection(){
+        List<Tuple> result = queryFactory
+                .select(member.username, member.age)
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result){
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+
+            System.out.println("username : " + username);
+            System.out.println("age : " + age);
+        }
+
+    }
+
+    /**
+     * 순수 JPA에서 DTO 조회하려면 new 명령어로 package 명을 다 적어줘서
+     * 지저분하고 생성자 방식만 지원하고 있다
+     */
+    @Test
+    public void findDtoByJPQL(){
+        List<MemberDto> resultList = em.createQuery("select new com.study.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+                .getResultList();
+
+        for(MemberDto memberDto : resultList){
+            System.out.println("memberDto : " + memberDto);
+        }
+
+    }
+
+    /**
+     * Projections 활용
+     * 1. Setter
+     * 2. fields
+     * 3. constructor
+     */
+    @Test
+    public void findDtoBySetter(){
+        List<MemberDto> result = queryFactory
+                .select(Projections.bean(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result){
+            System.out.println("memberDto : " + memberDto);
+        }
+
+    }
+
+    @Test
+    public void findDtoByFields(){
+        List<MemberDto> result = queryFactory
+                .select(Projections.fields(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result){
+            System.out.println("memberDto : " + memberDto);
+        }
+
+    }
+
+    @Test
+    public void findDtoByConstructor(){
+        List<UserDto> result = queryFactory
+                .select(Projections.constructor(UserDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result){
+            System.out.println("userDto : " + userDto);
+        }
+
+    }
+
+
+    /**
+     * ExpressionUtils 사용방법
+     */
+    @Test
+    public void findUserDto(){
+        QMember memberSub = new QMember("memberSub");
+        List<UserDto> result = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        member.username.as("name"),
+                        ExpressionUtils.as(JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub),"age")
+                ))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result){
+            System.out.println("memberDto : " + userDto);
+        }
+
     }
 }
