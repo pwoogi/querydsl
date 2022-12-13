@@ -2,6 +2,9 @@ package com.study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.study.querydsl.entity.Member;
@@ -20,6 +23,7 @@ import javax.persistence.PersistenceUnit;
 import javax.persistence.TupleElement;
 import java.util.List;
 
+import static com.querydsl.jpa.JPAExpressions.*;
 import static com.study.querydsl.entity.QMember.member;
 import static com.study.querydsl.entity.QTeam.team;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -235,7 +239,7 @@ public class QuerydslBasicTest {
      * 팀 A에 소속된 모든 회원 찾기 *
      */
     @Test
-    public void join(){
+    public void join() {
         List<Member> result = queryFactory
                 .selectFrom(member)
                 .leftJoin(member.team, team)
@@ -252,7 +256,7 @@ public class QuerydslBasicTest {
      * 회원의 이름이 팀 이름과 같은 회원 조회해보기
      */
     @Test
-    public void theta_join(){
+    public void theta_join() {
         em.persist(new Member("teamA"));
         em.persist(new Member("teamB"));
 
@@ -272,7 +276,7 @@ public class QuerydslBasicTest {
      * JPQL : select m, t from Member m left join m.team t on t.name = 'teamA'*
      */
     @Test
-    public void join_on_filtering(){
+    public void join_on_filtering() {
 
         List<Tuple> result = queryFactory
                 .select(member, team)
@@ -283,7 +287,7 @@ public class QuerydslBasicTest {
                 .where(team.name.eq("teamA")) // join의 경우 inner join 이므로 결과가 똑같다
                 .fetch();
 
-        for(Tuple tuple : result){
+        for (Tuple tuple : result) {
             System.out.println("tuple : " + tuple);
         }
     }
@@ -315,7 +319,7 @@ public class QuerydslBasicTest {
     EntityManagerFactory emf;
 
     @Test
-    public void fetchJoinNo(){
+    public void fetchJoinNo() {
         em.flush();
         em.clear();
 
@@ -329,7 +333,7 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void fetchJoinUse(){
+    public void fetchJoinUse() {
         em.flush();
         em.clear();
 
@@ -347,19 +351,126 @@ public class QuerydslBasicTest {
      * 나이가 가장 많은 회원 조회*
      */
     @Test
-    public void subQuery(){
+    public void subQuery() {
 
         QMember memberSub = new QMember("memberSub");
         List<Member> result = queryFactory
                 .selectFrom(member)
                 .where(member.age.eq(
-                        JPAExpressions
-                                .select(memberSub.age.max())
+                        select(memberSub.age.max())
                                 .from(memberSub)
                 ))
                 .fetch();
         Assertions.assertThat(result).extracting("age")
                 .containsExactly(40);
 
+    }
+
+    @Test
+    public void subQueryGoe() {
+
+        QMember memberSub = new QMember("memberSub");
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.goe(
+                        select(memberSub.age.avg())
+                                .from(memberSub)
+                ))
+                .fetch();
+        Assertions.assertThat(result).extracting("age")
+                .containsExactly(20, 30, 40);
+
+    }
+
+    @Test
+    public void subQueryIn() {
+
+        QMember memberSub = new QMember("memberSub");
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.in(
+                        select(memberSub.age)
+                                .from(memberSub)
+                                .where(memberSub.age.gt(10))
+                ))
+                .fetch();
+        Assertions.assertThat(result).extracting("age")
+                .containsExactly(20, 30, 40);
+
+    }
+
+    @Test
+    public void selectSubQuery() {
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Tuple> result = queryFactory
+                .select(member.username,
+                        select(memberSub.age.avg())
+                                .from(memberSub))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple : " + tuple);
+        }
+    }
+
+    @Test
+    public void basicCase() {
+        List<String> result = queryFactory
+                .select(member.age
+                        .when(10).then("10살")
+                        .when(20).then("20살")
+                        .otherwise("기타")
+                )
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    public void complexCase(){
+        List<String> result = queryFactory
+                .select(new CaseBuilder()
+                        .when(member.age.between(0, 20)).then("0~20살")
+                        .when(member.age.between(21, 30)).then("21~30살")
+                        .otherwise("기타")
+                )
+                .from(member)
+                .fetch();
+
+        for (String s : result){
+            System.out.println("s : " + s);
+        }
+    }
+
+    @Test
+    public void constant(){
+        List<Tuple> result = queryFactory
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple : " + tuple);
+        }
+    }
+
+    @Test
+    public void cocnat(){
+
+        List<String> result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue())) //stringValue : ENUM 처리시
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetch();
+
+        for (String s : result){
+            System.out.println("s = " + s);
+        }
     }
 }
