@@ -17,8 +17,8 @@ public class PostController {
 
     private final PostService postService;
 
-    @GetMapping("/post")
-    public List<PostResponseDto> find(@PageableDefault(size = 7) Pageable pageable){
-        return postService.findAll(pageable).getContent();
-    }
+//    @GetMapping("/post")
+//    public List<PostResponseDto> find(@PageableDefault(size = 7) Pageable pageable){
+//        return postService.findAll(pageable).getContent();
+//    }
 }

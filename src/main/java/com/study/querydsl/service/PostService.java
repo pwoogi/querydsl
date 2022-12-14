@@ -24,16 +24,16 @@ public class PostService {
     private final MemberRepository memberRepository;
 
 
-    @PostConstruct
-    public void init() {
-        Member member = memberRepository.save(Member.builder().age(0).username("chris").build());
-        for (int i = 1; i <= 25; ++i) {
-            postRepository.save(Post.builder().title("제목" + i).content("내용" + i).member(member).build());
-        }
-    }
-    public Page<PostResponseDto> findAll(Pageable pageable){
-        return postRepository.findByMemberOrderByIdDesc(createMember(), pageable)
-                .map(PostResponseDto::from);
-
-    }
+//    @PostConstruct
+//    public void init() {
+//        Member member = memberRepository.save(Member.builder().age(0).username("chris").build());
+//        for (int i = 1; i <= 25; ++i) {
+//            postRepository.save(Post.builder().title("제목" + i).content("내용" + i).member(member).build());
+//        }
+//    }
+//    public Page<PostResponseDto> findAll(Pageable pageable){
+//        return postRepository.findByMemberOrderByIdDesc(createMember(), pageable)
+//                .map(PostResponseDto::from);
+//
+//    }
 }
