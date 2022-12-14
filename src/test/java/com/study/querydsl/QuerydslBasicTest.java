@@ -668,5 +668,44 @@ public class QuerydslBasicTest {
 
     }
 
+    @Test
+    public void bulkUpdate(){
+        //벌크연산은 영속성 무시하고 바로 db에 값을 바꿔버린다(상태 불일치)
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        //벌크 연산 후 초기화 필수!
+        em.flush();
+        em.clear();
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member1 : result){
+            System.out.println("member 1 = " + member1);
+        }
+
+    }
+    
+    @Test
+    public void bulkAdd(){
+        long count = queryFactory
+                .update(member)
+                .set(member.age, member.age.multiply(2))
+                .execute();
+
+    }
+    @Test
+    public void bulkDelete(){
+        queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+
+    }
 
 }
